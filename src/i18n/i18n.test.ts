@@ -9,6 +9,7 @@ import { QUIZ } from "@/content/quiz";
 import { DELEGATE_ORDER, VOICES, playerLineFor } from "@/content/voices";
 import { DIFFICULTY_LEVELS } from "@/engine/levels";
 import { createInitialState, reducer } from "@/engine/reducer";
+import { PHRASES } from "@/i18n/phrases";
 import { tr } from "@/i18n/tr";
 import { withLanguages } from "@/state/storage";
 
@@ -98,7 +99,19 @@ describe("official languages", () => {
     lines.push(playerLineFor({ action: "propose", proposalId: PROPOSALS[0]?.id }));
     lines.push(playerLineFor({ action: "persuade", playerLine: "" }));
     for (const id of DELEGATE_ORDER) lines.push(VOICES[id].aim);
-    const missing = [...new Set(lines.filter((line) => /[\u4e00-\u9fff]/.test(line) && tr("en", line) === line))];
+    const langs = ["en", "fr", "es", "ru", "ar"] as const;
+    const missing = [...new Set(lines.filter((line) => /[\u4e00-\u9fff]/.test(line) && langs.some((lang) => tr(lang, line) === line)))];
     expect(missing).toEqual([]);
+  });
+
+  it("does not leave French, Spanish, Russian, or Arabic as a copy of English", () => {
+    const copied: string[] = [];
+    for (const [zh, pack] of PHRASES) {
+      if (!/[\u4e00-\u9fff]/.test(zh) || pack.en.length < 12 || !pack.en.includes(" ")) continue;
+      for (const lang of ["fr", "es", "ru", "ar"] as const) {
+        if (pack[lang] === pack.en) copied.push(`${lang}: ${zh.slice(0, 40)}`);
+      }
+    }
+    expect(copied).toEqual([]);
   });
 });

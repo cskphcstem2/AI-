@@ -40,4 +40,7 @@ export const SOURCE_ROWS: PhraseRow[] = [
   ["聯合國永續發展目標 4 專頁", "United Nations Sustainable Development Goal 4 page", "Page Objectif de développement durable 4 des Nations Unies", "Página del Objetivo de Desarrollo Sostenible 4 de Naciones Unidas", "Страница ЦУР 4 ООН", "صفحة هدف التنمية المستدامة 4 للأمم المتحدة"],
   ["美國國際開發署教育專頁", "USAID education page", "Page éducation de l'USAID", "Página de educación de USAID", "Страница USAID по образованию", "صفحة التعليم في الوكالة الأمريكية للتنمية الدولية"],
   ["BBC 全球教育報導摘要", "BBC global education coverage summary", "Résumé de couverture BBC sur l'éducation mondiale", "Resumen de cobertura BBC sobre educación mundial", "Сводка BBC по глобальному образованию", "ملخص تغطية بي بي سي للتعليم العالمي"],
+  ["世界銀行 · 教育概覽", "World Bank · Education overview", "Banque mondiale · Aperçu de l'éducation", "Banco Mundial · Panorama de la educación", "Всемирный банк · Обзор образования", "البنك الدولي · لمحة عن التعليم"],
+  ["全球教育夥伴關係", "Global Partnership for Education", "Partenariat mondial pour l'éducation", "Alianza Mundial para la Educación", "Глобальное партнёрство в сфере образования", "الشراكة العالمية من أجل التعليم"],
+  ["聯合國教科文組織 · 教育", "UNESCO · Education", "UNESCO · Éducation", "UNESCO · Educación", "ЮНЕСКО · Образование", "اليونسكو · التعليم"],
 ];

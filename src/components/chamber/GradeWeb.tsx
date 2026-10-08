@@ -91,7 +91,6 @@ export function GradeMarks({ criteria }: { criteria: MunCriterion[] }) {
       {criteria.map((item) => (
         <li key={item.id} data-testid={`grade-${item.id}`}>
           <p className="text-sm font-medium">{t(item.label)}</p>
-          <p className="text-[11px] text-ink-soft">{item.english}</p>
           <p className="mt-1 font-serif text-2xl">
             {item.level} · {t(levelLabel(item.level))}
           </p>

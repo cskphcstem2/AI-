@@ -41,7 +41,7 @@ export function ChamberShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <Mark className="size-10 text-brass" />
             <div>
-              <Kicker>Global Voice</Kicker>
+              <Kicker>{t("全球之聲")}</Kicker>
               <p className="font-serif text-xl">{t("全球之聲")}</p>
             </div>
           </div>

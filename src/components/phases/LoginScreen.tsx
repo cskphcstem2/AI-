@@ -86,13 +86,13 @@ export function LoginScreen() {
       <header className="mb-8 flex items-center gap-3 text-brass">
         <Mark className="size-12" />
         <div>
-          <Kicker>Model UN training</Kicker>
+          <Kicker>{t("模擬聯合國訓練")}</Kicker>
           <p className="font-serif text-lg text-paper">{t("全球之聲")}</p>
         </div>
       </header>
 
       <Paper className="p-6 sm:p-8">
-        <p className="text-sm tracking-[0.18em] text-brass-deep">GLOBAL VOICE</p>
+        <p className="text-sm tracking-[0.18em] text-brass-deep">{t("全球之聲")}</p>
         <h1 className="mt-2 font-serif text-3xl leading-tight sm:text-4xl">{t("登入議場")}</h1>
         <p className="mt-3 text-sm leading-6 text-ink-soft">
           {t("使用 Google 帳號登入。登入後，你的進度會依帳號分開保存在這部瀏覽器。")}
@@ -126,7 +126,7 @@ export function LoginScreen() {
 
         {error ? (
           <p role="alert" data-testid="auth-error" className="mt-5 rounded-sm border border-seal/40 bg-[#f8e8e8] px-3 py-2 text-sm text-seal">
-            {error}
+            {t(error)}
           </p>
         ) : null}
 

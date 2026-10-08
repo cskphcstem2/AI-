@@ -8,7 +8,7 @@ const CHINESE_BUTTONS: { voice: ChineseVoice; label: string; html: string }[] = 
 ];
 
 export function LanguageBar({ mode }: { mode: "session" | "speech" }) {
-  const { lang, speechLanguage, chineseVoice, setUi, setSpeech, setChineseVoice } = useTr();
+  const { t, lang, speechLanguage, chineseVoice, setUi, setSpeech, setChineseVoice } = useTr();
   const current = mode === "session" ? lang : speechLanguage;
   return (
     <div className="flex flex-wrap gap-2" data-testid={mode === "session" ? "ui-languages" : "speech-languages"} role="group">
@@ -30,7 +30,7 @@ export function LanguageBar({ mode }: { mode: "session" | "speech" }) {
                   on ? "bg-ink text-paper" : "bg-white/70 text-ink",
                 )}
               >
-                {button.label}
+                {t(button.label)}
               </button>
             );
           });

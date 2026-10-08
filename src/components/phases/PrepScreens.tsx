@@ -14,7 +14,7 @@ export function ChairScreen() {
   return (
     <Paper className="p-6 sm:p-8">
       <div className="flex items-center gap-3">
-        <span className="inline-flex size-11 items-center justify-center rounded-full bg-sea font-serif text-lg text-paper">席</span>
+        <span className="inline-flex h-11 min-w-11 items-center justify-center rounded-full bg-sea px-2 font-serif text-sm text-paper">{t("席")}</span>
         <div>
           <Kicker>{t("主席")}</Kicker>
           <h2 className="font-serif text-3xl">{t("開幕式")}</h2>

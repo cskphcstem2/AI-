@@ -40,7 +40,7 @@ export function LobbyScreen() {
         <div className="flex items-center gap-3">
           <Mark className="size-12" />
           <div>
-            <Kicker>Model UN training</Kicker>
+            <Kicker>{t("模擬聯合國訓練")}</Kicker>
             <p className="font-serif text-lg text-paper">{t("單人訓練議場")}</p>
           </div>
         </div>
@@ -48,7 +48,7 @@ export function LobbyScreen() {
       </header>
       <div className="mt-10 grid items-end gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.8fr)]">
         <div>
-          <p className="text-sm tracking-[0.22em] text-brass">GLOBAL VOICE</p>
+          <p className="text-sm tracking-[0.22em] text-brass">{t("全球之聲")}</p>
           <h1 className="mt-3 font-serif text-5xl leading-tight text-paper sm:text-6xl">{t("全球之聲")}</h1>
           <p className="mt-4 max-w-xl text-lg leading-8 text-[#e7dfd0]">
             {t("一場給中學生的模擬聯合國訓練。正式會議約四十分鐘，練習把立場說清楚。")}

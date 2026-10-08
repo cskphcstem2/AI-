@@ -124,11 +124,9 @@ export function RubricCard({ review, text }: { review: PresentationReview; text?
             const id = row.id as RubricAxisId;
             const score = review.axes[id];
             const label = review.mode === "typed" ? row.typedLabel : row.label;
-            const english = review.mode === "typed" ? row.typedEnglish : row.english;
             return (
               <div key={id} data-testid={`rubric-axis-${id}`}>
                 <p className="text-sm font-medium">{t(label)}</p>
-                <p className="text-[11px] text-ink-soft">{english}</p>
                 <p className="mt-1 font-serif text-2xl">
                   {score} · {t(levelLabel(score))}
                 </p>

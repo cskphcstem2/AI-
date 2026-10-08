@@ -33,7 +33,7 @@ export function RoomLobbyScreen() {
         <div className="flex items-center gap-3">
           <Mark className="size-12" />
           <div>
-            <Kicker>Online chamber</Kicker>
+            <Kicker>{t("聯機議場")}</Kicker>
             <p className="font-serif text-lg text-paper">{t("聯機議場")}</p>
           </div>
         </div>
@@ -42,7 +42,7 @@ export function RoomLobbyScreen() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
         <div>
-          <p className="text-sm tracking-[0.22em] text-brass">ROOM {room.code}</p>
+          <p className="text-sm tracking-[0.22em] text-brass">{t("聯機議場")} {room.code}</p>
           <h1 className="mt-2 font-serif text-4xl text-paper sm:text-5xl">{t("選席等候開議")}</h1>
           <p className="mt-3 max-w-xl text-sm leading-7 text-[#e7dfd0]">
             {t(

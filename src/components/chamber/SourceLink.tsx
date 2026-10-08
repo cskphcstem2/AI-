@@ -13,7 +13,7 @@ export function SourceLink({
 }): ReactNode {
   const { t } = useTr();
   if (!href) return null;
-  const text = label?.trim() || t("打開來源");
+  const text = label?.trim() ? t(label.trim()) : t("打開來源");
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.stopPropagation();
   };

@@ -1,4 +1,5 @@
 import { EDUCATION_ROWS } from "@/i18n/phraseEducation";
+import { FLOOR_ROWS } from "@/i18n/phraseFloor";
 import { AUTH_ROWS } from "@/i18n/phraseAuth";
 import { BODY_ROWS } from "@/i18n/phraseBody";
 import { FACT_ROWS } from "@/i18n/phraseFacts";
@@ -28,6 +29,7 @@ const GROUPS: PhraseRow[][] = [
   TRIAL_ROWS,
   SEAT_ROWS,
   EDUCATION_ROWS,
+  FLOOR_ROWS,
   AUTH_ROWS,
   RUBRIC_ROWS,
   SOURCE_ROWS,

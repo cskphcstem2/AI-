@@ -70,7 +70,7 @@ describe("evidence points", () => {
     state = reducer(state, { type: "TOGGLE_HIGHLIGHT", sentenceId: "ref-de-gem" });
     const bullet = state.bullets.find((item) => item.id === "ref-de-gem");
     expect(bullet?.href).toContain("unesco.org");
-    expect(bullet?.sourceLabel).toContain("GEM");
+    expect(bullet?.sourceLabel).toContain("全球教育監測報告");
   });
 
   it("adds an evidence point only when the comprehension answer is correct", () => {

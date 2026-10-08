@@ -1,4 +1,6 @@
 import { FOCUS_QUESTIONS } from "@/content/moderated";
+import { isOfficialLang, type OfficialLang } from "@/i18n/languages";
+import { tr } from "@/i18n/tr";
 import type { AiDelegateId, FloorState } from "@/types/game";
 
 export interface FloorScript {
@@ -110,5 +112,10 @@ export function emptyFloor(): FloorState {
 }
 
 export function loc(lang: string, zh: string, en: string): string {
-  return lang === "zh" ? zh : en;
+  if (!lang || lang === "zh") return zh;
+  const code: OfficialLang = isOfficialLang(lang) ? lang : "en";
+  if (code === "zh") return zh;
+  const translated = tr(code, zh);
+  if (translated !== zh) return translated;
+  return code === "en" ? en : translated;
 }

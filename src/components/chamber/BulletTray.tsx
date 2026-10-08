@@ -26,7 +26,7 @@ export function BulletTray() {
     <aside id="bullet-tray" className="rounded-md border border-brass/30 bg-[#101c2b]/80 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] tracking-[0.18em] text-brass">EVIDENCE POINTS</p>
+          <p className="text-[11px] tracking-[0.18em] text-brass">{t("論據清單")}</p>
           <h2 className="font-serif text-xl">{t("論據清單")}</h2>
         </div>
         <Quote className="size-4 text-brass" aria-hidden="true" />
