@@ -92,7 +92,7 @@ describe("evidence points", () => {
 
   it("returns to the example page unless more than half the quiz is correct", () => {
     const answer = (correctCount: number) => {
-      let state = { ...createInitialState(), caseId: "sdg4-reach", phase: "quiz" as const };
+      let state: GameState = { ...createInitialState(), caseId: "sdg4-reach", phase: "quiz" };
       QUIZ.forEach((question, index) => {
         const wrong = question.choices.find((choice) => choice.id !== question.correctChoiceId);
         const choiceId = index < correctCount ? question.correctChoiceId : (wrong?.id ?? "b");

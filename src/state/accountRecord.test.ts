@@ -24,8 +24,14 @@ function score(sessionId: string, playedAt: string, overall: number): SessionSco
     coreSurvived: true,
     yesCount: 4,
     noCount: 1,
-    narrative: { headline: "", body: "" },
-  } as SessionScore;
+    narrative: {
+      consistency: "",
+      argumentation: "",
+      alliance: "",
+      influence: "",
+      closing: "",
+    },
+  };
 }
 
 describe("account practice record", () => {
