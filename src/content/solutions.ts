@@ -99,5 +99,5 @@ export function closenessReply(id: CountryId, band: Band, boosted: boolean, lang
   const row = LINES[id][band];
   const base = lang === "zh" ? row.zh : row.en;
   if (!boosted || band === "redline") return base;
-  return `${base}${lang === "zh" ? BOOST.zh : BOOST.en}`;
+  return `${base} ${lang === "zh" ? BOOST.zh : BOOST.en}`;
 }

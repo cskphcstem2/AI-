@@ -197,6 +197,18 @@ describe("diplomacy and voting", () => {
     expect(state.amendmentCursor).toBe(0);
   });
 
+  it("opens the amendment page from ask-for-cosponsors even when the blanks are still short", () => {
+    let state = { ...createInitialState(), phase: "drafting" as const };
+    state = reducer(state, {
+      type: "SET_BLANK",
+      blankId: "form",
+      value: { kind: "custom", custom: "贈款為主。" },
+    });
+    state = reducer(state, { type: "SOLICIT" });
+    expect(state.amendmentCursor).toBe(0);
+    expect(state.phase).toBe("drafting");
+  });
+
   it("makes the private-capital temptation lose Bangladesh", () => {
     const blanks = modelBlanks();
     blanks.form = { kind: "option", optionId: "opt-loan" };

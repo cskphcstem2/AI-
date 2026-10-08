@@ -23,11 +23,26 @@ function ComposeDraft() {
   const { t } = useTr();
   const clauses = clauseText(state.blanks, state.bullets);
   const resultRef = useRef<HTMLDivElement>(null);
+  const drafts = useRef<Record<string, { custom: string; bulletId?: string }>>({});
   const enough = state.cosponsors.length >= state.difficulty.cosponsorCount;
   useEffect(() => {
     if (!state.solicited) return;
     resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [state.solicited, state.cosponsors.length]);
+
+  const askForCosponsors = () => {
+    for (const [blankId, draft] of Object.entries(drafts.current)) {
+      const bullet = state.bullets.find((item) => item.id === draft.bulletId);
+      const sentence = draft.custom.trim() || bullet?.text || "";
+      if (!sentence) continue;
+      dispatch({
+        type: "SET_BLANK",
+        blankId,
+        value: { kind: "custom", custom: sentence, bulletId: draft.bulletId },
+      });
+    }
+    dispatch({ type: "SOLICIT" });
+  };
 
   return (
     <div className="space-y-4">
@@ -49,7 +64,14 @@ function ComposeDraft() {
         ))}
         <ol className="mt-4 space-y-5">
           {DRAFT_BLANKS.map((blank) => (
-            <BlankEditor key={blank.id} blankId={blank.id} clause={clauses[blank.id] ?? ""} />
+            <BlankEditor
+              key={blank.id}
+              blankId={blank.id}
+              clause={clauses[blank.id] ?? ""}
+              onDraft={(draft) => {
+                drafts.current[blank.id] = draft;
+              }}
+            />
           ))}
         </ol>
       </Paper>
@@ -65,11 +87,11 @@ function ComposeDraft() {
           </Button>
         ) : null}
         {!state.solicited ? (
-          <Button data-testid="solicit" size="lg" variant="brass" onClick={() => dispatch({ type: "SOLICIT" })}>
+          <Button data-testid="solicit" size="lg" variant="brass" onClick={askForCosponsors}>
             {t("徵求連署")}
           </Button>
         ) : (
-          <Button data-testid="solicit" variant="line" onClick={() => dispatch({ type: "SOLICIT" })}>
+          <Button data-testid="solicit" variant="line" onClick={askForCosponsors}>
             {t("再徵求一次")}
           </Button>
         )}
@@ -83,13 +105,24 @@ function ComposeDraft() {
   );
 }
 
-function BlankEditor({ blankId, clause }: { blankId: string; clause: string }) {
+function BlankEditor({
+  blankId,
+  clause,
+  onDraft,
+}: {
+  blankId: string;
+  clause: string;
+  onDraft: (draft: { custom: string; bulletId?: string }) => void;
+}) {
   const { state, dispatch } = useGame();
   const { t } = useTr();
   const blank = DRAFT_BLANKS.find((item) => item.id === blankId);
   const value = state.blanks[blankId];
   const [custom, setCustom] = useState(value?.kind === "custom" ? (value.custom ?? "") : "");
   const [bulletId, setBulletId] = useState<string | undefined>(value?.kind === "custom" ? value.bulletId : undefined);
+  useEffect(() => {
+    onDraft({ custom, bulletId });
+  }, [custom, bulletId, onDraft]);
   if (!blank) return null;
   const active = state.activeBlankId === blank.id;
   const attached = state.bullets.find((bullet) => bullet.id === bulletId);

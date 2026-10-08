@@ -814,17 +814,16 @@ export function reducer(state: GameState, action: Action): GameState {
       };
     case "SOLICIT": {
       if (state.phase !== "drafting" || state.amendmentCursor >= 0) return state;
-      if (!blanksComplete(state.blanks)) {
-        return { ...state, lastNotice: notice("warn", "四個空位都要有句子。自己寫的主張至少 16 字。") };
-      }
       const tags = collectTags(state.blanks, state.bullets);
       const result = evaluateCosponsors(tags, state.affinities, state.difficulty.level, state.playerId);
-      const enough = result.cosponsors.length >= state.difficulty.cosponsorCount;
+      const enough = blanksComplete(state.blanks) && result.cosponsors.length >= state.difficulty.cosponsorCount;
       return {
         ...state,
         solicited: true,
         cosponsors: result.cosponsors,
         cosponsorNotes: result.notes,
+        workingPaper: !enough,
+        amendmentCursor: 0,
         lastNotice: notice(
           enough ? "good" : "warn",
           enough
