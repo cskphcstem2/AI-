@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AccountBar } from "@/components/chamber/AccountBar";
 import { Kicker, Mark, Seal } from "@/components/chamber/primitives";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,9 @@ const STEPS = [
 export function CaseSelectScreen() {
   const { dispatch } = useGame();
   const { t } = useTr();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-4 py-8 sm:px-8" data-testid="case-catalog">

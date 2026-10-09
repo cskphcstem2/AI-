@@ -96,7 +96,7 @@ export type Action =
   | { type: "SET_REFLECTION"; text: string }
   | { type: "APPLY_COACH"; mark: CoachMark }
   | { type: "SET_DIFFICULTY"; difficulty: DifficultyProfile }
-  | { type: "NEW_SESSION"; sessionId: string; difficulty: DifficultyProfile; caseId?: string }
+  | { type: "NEW_SESSION"; sessionId: string; difficulty: DifficultyProfile; caseId?: string | null }
   | { type: "LOAD_SAVE"; state: GameState; savedAt: string; now: number }
   | { type: "SET_UI_LANGUAGE"; language: OfficialLang }
   | { type: "SET_SPEECH_LANGUAGE"; language: OfficialLang }

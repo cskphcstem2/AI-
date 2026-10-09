@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode } from "react";
 import { useAuth } from "@/auth/AuthContext";
 import { createInitialState, reducer, type Action } from "@/engine/reducer";
+import { deriveDifficulty } from "@/engine/difficulty";
 import { enqueueIntent, publishGameState } from "@/multiplayer/rooms";
 import { withPerspective, type RoomDoc } from "@/multiplayer/types";
 import { GameContext, type GameApi } from "@/state/context";
@@ -122,7 +123,15 @@ export function OnlineGameProvider({
       state,
       history,
       dispatch,
-      restart: () => undefined,
+      restart: () => {
+        dispatch({
+          type: "NEW_SESSION",
+          sessionId: `gv-${Date.now()}`,
+          difficulty: deriveDifficulty(loadHistory()),
+          caseId: null,
+        });
+        window.scrollTo(0, 0);
+      },
       enterDebrief: () => {
         if (state.score && !state.archived) {
           const current = loadHistory();

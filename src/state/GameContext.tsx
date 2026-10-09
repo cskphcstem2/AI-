@@ -138,7 +138,9 @@ export function GameProvider({
           type: "NEW_SESSION",
           sessionId: `gv-${Date.now()}`,
           difficulty: deriveDifficulty(latest),
+          caseId: null,
         });
+        window.scrollTo(0, 0);
       },
       enterDebrief: () => {
         rememberScore();
