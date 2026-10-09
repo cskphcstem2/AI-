@@ -905,7 +905,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== "lobby") return state;
       return { ...state, difficulty: action.difficulty };
     case "NEW_SESSION": {
-      const nextCase = action.caseId ? (findCase(action.caseId)?.id ?? state.caseId) : state.caseId;
+      const nextCase = action.caseId ? (findCase(action.caseId)?.id ?? null) : null;
       const carried = state.mode === "online" ? (state.humanSeats[0] ?? state.playerId) : state.playerId;
       const allowed = seatsForCase(nextCase);
       const playerId = allowed.includes(carried) ? carried : allowed[0]!;

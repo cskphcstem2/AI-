@@ -53,6 +53,13 @@ describe("SDG cases", () => {
     const back = reducer(seated, { type: "CLEAR_CASE" });
     expect(back.caseId).toBeNull();
     expect(back.phase).toBe("lobby");
+    const restarted = reducer(reducer(chosen, { type: "BEGIN" }), {
+      type: "NEW_SESSION",
+      sessionId: "again",
+      difficulty: chosen.difficulty,
+    });
+    expect(restarted.phase).toBe("lobby");
+    expect(restarted.caseId).toBeNull();
   });
 
   it("renders every case note in the language the user chose", () => {
