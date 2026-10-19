@@ -1,3 +1,4 @@
+import { loc } from "@/content/floor";
 import type { OfficialLang } from "@/i18n/languages";
 import type { CountryId } from "@/types/game";
 
@@ -97,7 +98,7 @@ const BOOST = {
 
 export function closenessReply(id: CountryId, band: Band, boosted: boolean, lang: OfficialLang): string {
   const row = LINES[id][band];
-  const base = lang === "zh" ? row.zh : row.en;
+  const base = loc(lang, row.zh, row.en);
   if (!boosted || band === "redline") return base;
-  return `${base} ${lang === "zh" ? BOOST.zh : BOOST.en}`;
+  return `${base} ${loc(lang, BOOST.zh, BOOST.en)}`;
 }

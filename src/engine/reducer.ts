@@ -84,7 +84,7 @@ export type Action =
   | { type: "TO_DRAFT" }
   | { type: "FOCUS_BLANK"; blankId: string }
   | { type: "SET_BLANK"; blankId: string; value: BlankValue }
-  | { type: "SOLICIT" }
+  | { type: "SOLICIT"; blanks?: Record<string, BlankValue> }
   | { type: "BACK_TO_DRAFT" }
   | { type: "BACK_TO_CAUCUS" }
   | { type: "START_AMENDMENTS" }
@@ -814,11 +814,13 @@ export function reducer(state: GameState, action: Action): GameState {
       };
     case "SOLICIT": {
       if (state.phase !== "drafting" || state.amendmentCursor >= 0) return state;
-      const tags = collectTags(state.blanks, state.bullets);
+      const blanks = action.blanks ? { ...state.blanks, ...action.blanks } : state.blanks;
+      const tags = collectTags(blanks, state.bullets);
       const result = evaluateCosponsors(tags, state.affinities, state.difficulty.level, state.playerId);
-      const enough = blanksComplete(state.blanks) && result.cosponsors.length >= state.difficulty.cosponsorCount;
+      const enough = blanksComplete(blanks) && result.cosponsors.length >= state.difficulty.cosponsorCount;
       return {
         ...state,
+        blanks,
         solicited: true,
         cosponsors: result.cosponsors,
         cosponsorNotes: result.notes,
