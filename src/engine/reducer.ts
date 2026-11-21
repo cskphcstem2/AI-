@@ -68,6 +68,7 @@ export type Action =
   | { type: "FLOOR_SPEAK"; text: string; mode: InterventionMode; bulletId?: string; delivery?: DeliverySample }
   | { type: "FLOOR_ANSWER"; text: string; delivery?: DeliverySample }
   | { type: "FLOOR_PASS" }
+  | { type: "FLOOR_CONTINUE" }
   | { type: "CONTINUE_FOCUS" }
   | { type: "SKIP_TURN" }
   | { type: "TO_CAUCUS" }
@@ -468,7 +469,7 @@ export function reducer(state: GameState, action: Action): GameState {
         ...state,
         phase: "moderated",
         floor: emptyFloor(),
-        lastNotice: notice("info", "進入有秩序動議。三輪輪流發言。輪到你時先說進一步想法，論據用來支持或反駁，不能代替你要說的話。"),
+        lastNotice: notice("info", "進入有秩序動議。每一輪先跟一國說完。說完後可以繼續下一國，或直接進入非監管式議會。"),
       };
     case "REVEAL_REMARK": {
       if (state.phase !== "moderated") return state;
@@ -696,24 +697,35 @@ export function reducer(state: GameState, action: Action): GameState {
           lastNotice: notice("info", "三輪討論已收成論據。可以進入非監管式議會。"),
         };
       }
-      const nextRound = (round + 1) as 1 | 2 | 3;
       return {
         ...state,
         presentations,
-        floor: { ...state.floor, round: nextRound, beat: "listen", lines },
+        floor: { ...state.floor, round, beat: "gate", lines },
+        lastNotice: notice("info", "這一國談完了。可以繼續跟下一國，或直接進入非監管式議會。"),
+      };
+    }
+    case "FLOOR_CONTINUE": {
+      if (state.phase !== "moderated" || state.floor.beat !== "gate" || state.floor.round >= 3) return state;
+      const nextRound = (state.floor.round + 1) as 1 | 2 | 3;
+      return {
+        ...state,
+        floor: { ...state.floor, round: nextRound, beat: "listen" },
         lastNotice: null,
       };
     }
     case "CONTINUE_FOCUS":
     case "TO_CAUCUS": {
       if (state.phase !== "moderated") return state;
-      if (state.floor.beat !== "done") {
-        return { ...state, lastNotice: notice("warn", "有秩序動議還沒說完三輪。") };
+      if (state.floor.beat !== "done" && state.floor.beat !== "gate") {
+        return { ...state, lastNotice: notice("warn", "先跟這一國把這一輪說完，再選擇繼續或跳到下一部分。") };
       }
+      const added = harvestFloor(state);
       return {
         ...state,
+        bullets: [...state.bullets, ...added],
+        floor: { ...state.floor, harvested: true, beat: "done" },
         phase: "unmoderated",
-        lastNotice: notice("info", "有秩序動議結束。接下來是非監管式議會：五席都開得了。跟完一國不會關掉其他國，點另一國就換過去。"),
+        lastNotice: notice("info", "有秩序動議結束。非監管式議會跟一個國家談完後，可以繼續跟其他國家，或直接進入草案。"),
       };
     }
     case "SKIP_TURN": {
@@ -786,10 +798,10 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case "TO_DRAFT": {
       if (state.phase !== "unmoderated") return state;
-      if (countriesTalked(state.caucusLog) < 3) {
+      if (countriesTalked(state.caucusLog) < 1) {
         return {
           ...state,
-          lastNotice: notice("warn", "非監管式議會至少要跟三個國家談過，再進草案。"),
+          lastNotice: notice("warn", "非監管式議會先跟一個國家談過，再進草案。"),
         };
       }
       const added = harvestCaucus(state);

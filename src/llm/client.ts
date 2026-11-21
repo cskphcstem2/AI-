@@ -31,8 +31,13 @@ export function createLlmClient(env: {
   apiKey?: string;
   model?: string;
 }): LlmClient {
-  if (env.baseUrl && env.apiKey) {
-    return new OpenAiCompatibleClient(env.baseUrl, env.apiKey, env.model || "gpt-4o-mini");
+  const apiKey = env.apiKey?.trim();
+  if (apiKey) {
+    return new OpenAiCompatibleClient(
+      env.baseUrl?.trim() || "https://api.x.ai/v1",
+      apiKey,
+      env.model?.trim() || "grok-4.3",
+    );
   }
   return new MockLlmClient();
 }
@@ -71,6 +76,7 @@ class OpenAiCompatibleClient implements LlmClient {
       body: JSON.stringify({
         model: this.model,
         temperature: request.temperature ?? 0.4,
+        reasoning_effort: "none",
         messages: [
           { role: "system", content: request.instructions },
           { role: "user", content: request.input },

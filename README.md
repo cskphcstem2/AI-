@@ -122,7 +122,7 @@ VITE_FIREBASE_MEASUREMENT_ID=
 
 ## 語言模型
 
-對白、好感度和表決目前故意不交給模型自由發揮，避免紅線被改寫。`.env.example` 裡的 `VITE_LLM_BASE_URL`、`VITE_LLM_API_KEY`、`VITE_LLM_MODEL` 只會讓頁尾顯示「已偵測到設定」。真正結算仍走 `src/engine/`。
+對白、好感度和表決仍由規則決定，避免紅線被改寫。發言評分和閉幕七項分數只交給 Grok（`https://api.x.ai/v1`、`grok-4.3`，不開啟推理）。沒有金鑰或接口失敗時，畫面只顯示評分員暫時無法給分，不再用規則引擎補分。有秩序動議和非監管式議會在跟完一個國家後，可以繼續或直接進入下一部分。
 
 之後若要讓某一席的語氣改由模型生成，用 `buildDelegateSystemPrompt()` 組系統提示，呼叫 `createLlmClient().complete()`，再把回傳句子交回 `resolveCaucus()` 的既有加減幅。模型可以換說法，不應該自己決定連署和投票。
 

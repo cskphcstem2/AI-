@@ -22,8 +22,7 @@ export function UnmoderatedScreen() {
         <Kicker>{t("非監管式議會")}</Kicker>
         <h2 className="mt-1 font-serif text-3xl text-paper">{t("五席都開得了")}</h2>
         <p className="mt-2 text-sm leading-6 text-[#d9d0c2]">
-          {t("點另一國就換過去。跟完一國不會鎖住其他國。每一席各自可以再談三次。")}
-          {t("至少要跟三個國家談過，才能寫草案。")}
+          {t("跟一個國家談完後，可以繼續跟其他國家，或直接進入草案。")}
           {t(`目前已跟 ${countriesTalked(state.caucusLog)} 國談過。`)}
         </p>
       </div>
@@ -56,9 +55,20 @@ export function UnmoderatedScreen() {
       ) : (
         <p className="text-sm text-[#d9d0c2]">{t("先選一個席位。每一席的紀錄只留在那一席。")}</p>
       )}
-      <Button data-testid="to-draft" variant="paper" onClick={() => dispatch({ type: "TO_DRAFT" })}>
-        {t("結束接觸，進入草案")}
-      </Button>
+      {countriesTalked(state.caucusLog) >= 1 ? (
+        <Paper className="p-5">
+          <p className="text-sm leading-7">{t("你已跟一個國家談過。可以繼續跟其他國家，或直接進入草案。")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="paper" data-testid="to-draft" onClick={() => dispatch({ type: "TO_DRAFT" })}>
+              {t("直接進入草案")}
+            </Button>
+          </div>
+        </Paper>
+      ) : (
+        <Button data-testid="to-draft" variant="paper" onClick={() => dispatch({ type: "TO_DRAFT" })}>
+          {t("結束接觸，進入草案")}
+        </Button>
+      )}
     </div>
   );
 }

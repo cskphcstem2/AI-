@@ -1,10 +1,10 @@
 import { CASES, findCase, type TrainingCase } from "@/content/cases";
 import { DELEGATES } from "@/content/delegates";
-import { speechMark, type PresentationReview } from "@/engine/presentation";
+import { RUBRIC_AXES, speechMark, type PresentationReview } from "@/engine/presentation";
 import { gradeRound, MUN_CRITERIA, type MunCriterion } from "@/engine/scoring";
 import { languageMeta, type OfficialLang } from "@/i18n/languages";
 import type { LlmClient } from "@/llm/client";
-import type { CoachMark, ExamplePick, GameState, RubricLevel, SessionScore } from "@/types/game";
+import type { CoachMark, ExamplePick, GameState, RubricAxisId, RubricLevel, SessionScore } from "@/types/game";
 
 const IMPROVE: Record<string, string> = {
   representation: "國家立場需要加強。用這一席的名字說出要守住的利益，不要只留口號。",
@@ -91,10 +91,7 @@ function clip(text: string, max = 360): string {
 export function roundDossier(state: GameState, score: SessionScore): string {
   const training = findCase(state.caseId);
   const seat = DELEGATES[state.playerId]?.placard ?? state.playerId;
-  const talks = (state.presentations ?? []).map((item, index) => {
-    const axes = item.axes;
-    return `發言${index + 1} ${item.occasion} ${item.mode}：立場${axes.position} 論證${axes.reasoning} 證據${axes.evidence} 方案${axes.solution} 扣題${axes.focus} 表達${axes.delivery} 儀態${axes.protocol}`;
-  });
+  const talks = (state.presentations ?? []).map((item, index) => `發言${index + 1} ${item.occasion} ${item.mode}`);
   const lines = (state.interventions ?? []).slice(0, 6).map((item) => clip(item.text, 180));
   return [
     `席位：${seat}`,
@@ -169,9 +166,8 @@ export async function gradeSession(
   state: GameState,
   score: SessionScore,
   lang: OfficialLang,
-): Promise<CoachMark> {
-  const local = examineRoundLocal(state, score);
-  if (client.id !== "openai-compatible") return local;
+): Promise<CoachMark | null> {
+  if (client.id !== "openai-compatible") return null;
   try {
     const raw = await client.complete({
       purpose: "judge",
@@ -182,14 +178,14 @@ export async function gradeSession(
         .join("\n")}`,
     });
     const parsed = parseRoundCoach(raw);
-    if (!parsed) return local;
+    if (!parsed) return null;
     return {
       ...parsed,
       examples: fillExamples(parsed.examples, parsed.overall, state.caseId),
       source: "model",
     };
   } catch {
-    return local;
+    return null;
   }
 }
 
@@ -197,6 +193,8 @@ export interface SpeechCoachMark {
   mark: number;
   improvements: string[];
   source: "model" | "examiner";
+  axes?: Record<RubricAxisId, RubricLevel>;
+  notes?: Record<RubricAxisId, string>;
 }
 
 export function examineSpeechLocal(review: PresentationReview): SpeechCoachMark {
@@ -211,12 +209,41 @@ export function examineSpeechLocal(review: PresentationReview): SpeechCoachMark 
   };
 }
 
+function parseSpeechAxes(value: unknown): Record<RubricAxisId, RubricLevel> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const body = value as Record<string, unknown>;
+  const axes = {} as Record<RubricAxisId, RubricLevel>;
+  for (const item of RUBRIC_AXES) {
+    const level = clampLevel(body[item.id]);
+    if (!level) return undefined;
+    axes[item.id] = level;
+  }
+  return axes;
+}
+
+function parseSpeechNotes(value: unknown): Record<RubricAxisId, string> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const body = value as Record<string, unknown>;
+  const notes = {} as Record<RubricAxisId, string>;
+  for (const item of RUBRIC_AXES) {
+    const note = body[item.id];
+    if (typeof note !== "string" || !note.trim()) return undefined;
+    notes[item.id] = note.trim().slice(0, 180);
+  }
+  return notes;
+}
+
 export function parseSpeechCoach(raw: string): Omit<SpeechCoachMark, "source"> | null {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start < 0 || end <= start) return null;
   try {
-    const body = JSON.parse(raw.slice(start, end + 1)) as { mark?: unknown; improvements?: unknown };
+    const body = JSON.parse(raw.slice(start, end + 1)) as {
+      mark?: unknown;
+      improvements?: unknown;
+      axes?: unknown;
+      notes?: unknown;
+    };
     const mark = clampMark(body.mark);
     if (mark == null || !Array.isArray(body.improvements)) return null;
     const improvements = body.improvements
@@ -224,7 +251,7 @@ export function parseSpeechCoach(raw: string): Omit<SpeechCoachMark, "source"> |
       .map((item) => item.trim().slice(0, 180))
       .slice(0, 4);
     if (!improvements.length) return null;
-    return { mark, improvements };
+    return { mark, improvements, axes: parseSpeechAxes(body.axes), notes: parseSpeechNotes(body.notes) };
   } catch {
     return null;
   }
@@ -235,21 +262,20 @@ export async function gradeSpeech(
   review: PresentationReview,
   text: string | undefined,
   lang: OfficialLang,
-): Promise<SpeechCoachMark> {
-  const local = examineSpeechLocal(review);
+): Promise<SpeechCoachMark | null> {
   const spoken = text?.trim() ?? "";
-  if (client.id !== "openai-compatible" || spoken.length < 8) return local;
+  if (client.id !== "openai-compatible" || spoken.length < 8) return null;
   try {
     const raw = await client.complete({
       purpose: "judge",
       temperature: 0.2,
-      instructions: `你是模擬聯合國的評分員。只根據這一次發言給分。回傳 JSON：{"mark":0到100,"improvements":["最需要改的部分，最多四句"]}。改進建議用${languageMeta(lang).label}書寫。`,
+      instructions: `你是模擬聯合國的評分員。只根據這一次發言給分，不要替學生補上沒有說過的內容。回傳 JSON，不要加說明：{"mark":0到100,"axes":{"position":1到5,"reasoning":1到5,"evidence":1到5,"solution":1到5,"focus":1到5,"delivery":1到5,"protocol":1到5},"notes":{"position":"一句","reasoning":"一句","evidence":"一句","solution":"一句","focus":"一句","delivery":"一句","protocol":"一句"},"improvements":["最需要改的部分，最多四句"]}。七個軸必須齊。notes 和 improvements 用${languageMeta(lang).label}書寫。`,
       input: `場合：${review.occasion}。方式：${review.mode}。\n發言：${clip(spoken, 900)}`,
     });
     const parsed = parseSpeechCoach(raw);
-    if (!parsed) return local;
+    if (!parsed?.axes || !parsed.notes) return null;
     return { ...parsed, source: "model" };
   } catch {
-    return local;
+    return null;
   }
 }

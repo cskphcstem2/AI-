@@ -50,7 +50,7 @@ export interface TruthBullet {
   sourceLabel?: string;
 }
 
-export type FloorBeat = "listen" | "player" | "answer" | "done";
+export type FloorBeat = "listen" | "player" | "answer" | "gate" | "done";
 
 export interface FloorLine {
   id: string;

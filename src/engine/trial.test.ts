@@ -38,6 +38,9 @@ describe("moderated trial", () => {
     expect(state.floor.lines.at(-1)?.speaker).toBe("usa");
     expect(state.interventions[0]?.valid).toBe(true);
     state = reducer(state, { type: "FLOOR_PASS" });
+    expect(state.floor.round).toBe(1);
+    expect(state.floor.beat).toBe("gate");
+    state = reducer(state, { type: "FLOOR_CONTINUE" });
     expect(state.floor.round).toBe(2);
     expect(state.floor.beat).toBe("listen");
 
@@ -50,6 +53,8 @@ describe("moderated trial", () => {
     expect(state.floor.beat).toBe("answer");
     expect(state.floor.lines.at(-1)?.speaker).toBe("bangladesh");
     state = reducer(state, { type: "FLOOR_ANSWER", text: "報告可以有，但不得凍結撥款，社區仍要進得了門。" });
+    expect(state.floor.beat).toBe("gate");
+    state = reducer(state, { type: "FLOOR_CONTINUE" });
     expect(state.floor.round).toBe(3);
 
     state = reducer(state, { type: "FLOOR_TURN" });
@@ -67,7 +72,7 @@ describe("moderated trial", () => {
     expect(state.phase).toBe("unmoderated");
     state = reducer(state, { type: "TO_DRAFT" });
     expect(state.phase).toBe("unmoderated");
-    expect(state.lastNotice?.text).toContain("三個國家");
+    expect(state.lastNotice?.text).toContain("一個國家");
   });
 
   it("lets a spoken turn move the moderated debate to the next round", () => {
@@ -89,6 +94,8 @@ describe("moderated trial", () => {
     });
     expect(state.presentations?.at(-1)?.id).not.toBe(ideaMark?.id);
     expect(state.presentations?.at(-1)?.mode).toBe("voice");
+    expect(state.floor.beat).toBe("gate");
+    state = reducer(state, { type: "FLOOR_CONTINUE" });
     expect(state.floor.round).toBe(2);
     expect(state.floor.beat).toBe("listen");
   });
@@ -108,7 +115,7 @@ describe("moderated trial", () => {
 });
 
 describe("player-written solutions", () => {
-  it("judges whether a typed proposal is close, and blocks the draft before three countries", () => {
+  it("judges whether a typed proposal is close, and opens the draft after one country", () => {
     let state: GameState = { ...createInitialState(), phase: "unmoderated" };
     state = reducer(state, {
       type: "CAUCUS",
@@ -120,7 +127,7 @@ describe("player-written solutions", () => {
     expect(state.affinities.bangladesh).toBeGreaterThan(66);
     expect(state.caucusLog[0]?.reply).toContain("靠近");
     state = reducer(state, { type: "TO_DRAFT" });
-    expect(state.phase).toBe("unmoderated");
+    expect(state.phase).toBe("drafting");
   });
 
   it("reads English clauses and keeps an evidence point from being the only answer", () => {

@@ -56,8 +56,21 @@ export function ModeratedScreen() {
       {state.floor.beat === "player" ? (
         <IdeaComposer usesLeft={usesLeft} minChars={ideaMinChars(state.difficulty.speechMinChars)} questionTags={script.tags} />
       ) : null}
-      {state.floor.beat === "answer" || state.floor.beat === "listen" ? <LatestSpeechScore /> : null}
-      {state.floor.beat === "answer" ? <AnswerComposer lastRound={state.floor.round >= 3} /> : null}
+      {state.floor.beat === "answer" || state.floor.beat === "listen" || state.floor.beat === "gate" ? <LatestSpeechScore /> : null}
+      {state.floor.beat === "answer" ? <AnswerComposer /> : null}
+      {state.floor.beat === "gate" ? (
+        <Paper className="p-5">
+          <p className="text-sm leading-7">{t("這一國談完了。可以繼續跟下一國，或直接進入非監管式議會。")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="ink" data-testid="floor-continue" onClick={() => dispatch({ type: "FLOOR_CONTINUE" })}>
+              {t("繼續下一國")}
+            </Button>
+            <Button variant="paper" data-testid="to-caucus" onClick={() => dispatch({ type: "TO_CAUCUS" })}>
+              {t("跳到非監管式議會")}
+            </Button>
+          </div>
+        </Paper>
+      ) : null}
       {state.floor.beat === "done" ? (
         <Paper className="p-5">
           <p className="text-sm leading-7">{t("三輪說完了。討論收成已放進論據清單。")}</p>
@@ -219,7 +232,7 @@ function IdeaComposer({
   );
 }
 
-function AnswerComposer({ lastRound }: { lastRound: boolean }) {
+function AnswerComposer() {
   const { dispatch } = useGame();
   const { t } = useTr();
   const [input, setInput] = useState<"voice" | "type">("voice");
@@ -274,7 +287,7 @@ function AnswerComposer({ lastRound }: { lastRound: boolean }) {
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button variant="quiet" data-testid="floor-pass" onClick={() => dispatch({ type: "FLOOR_PASS" })}>
-          {lastRound ? t("不回應，收成論據") : t("不回應，下一輪")}
+          {t("不回應")}
         </Button>
       </div>
     </Paper>

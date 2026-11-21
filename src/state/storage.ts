@@ -180,7 +180,7 @@ export function ensureThreads(state: GameState): GameState {
   return { ...state, playerId, affinities, threads };
 }
 
-const FLOOR_BEATS = new Set<FloorBeat>(["listen", "player", "answer", "done"]);
+const FLOOR_BEATS = new Set<FloorBeat>(["listen", "player", "answer", "gate", "done"]);
 
 export function ensureDebate(state: GameState): GameState {
   const floor = state.floor;

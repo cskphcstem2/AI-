@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RUBRIC_AXES, levelLabel, speechMark, type PresentationReview, type RubricAxisId, type RubricLevel } from "@/engine/presentation";
+import { RUBRIC_AXES, levelLabel, type PresentationReview, type RubricAxisId, type RubricLevel } from "@/engine/presentation";
 import { useTr } from "@/i18n/useTr";
 import { llmEnvFromImportMeta, createLlmClient } from "@/llm/client";
 import { gradeSpeech, type SpeechCoachMark } from "@/llm/coach";
@@ -86,11 +86,16 @@ function RadarChart({ review }: { review: PresentationReview }) {
 function useSpeechCoach(review: PresentationReview, text?: string) {
   const { lang } = useTr();
   const [coach, setCoach] = useState<SpeechCoachMark | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
+    setCoach(null);
+    setFailed(false);
     const timer = window.setTimeout(() => {
       void gradeSpeech(createLlmClient(llmEnvFromImportMeta(import.meta.env)), review, text, lang).then((mark) => {
-        if (!cancelled) setCoach(mark);
+        if (cancelled) return;
+        if (mark?.axes && mark.notes) setCoach(mark);
+        else setFailed(true);
       });
     }, 400);
     return () => {
@@ -98,15 +103,41 @@ function useSpeechCoach(review: PresentationReview, text?: string) {
       window.clearTimeout(timer);
     };
   }, [lang, review, text]);
-  return coach;
+  return { coach, failed };
+}
+
+function withCoach(review: PresentationReview, coach: SpeechCoachMark | null): PresentationReview {
+  if (!coach?.axes) return review;
+  const notes = coach.notes ?? review.notes;
+  return {
+    ...review,
+    axes: coach.axes,
+    notes,
+    oratory: coach.axes.delivery,
+    protocol: coach.axes.protocol,
+    contentNote: notes.position,
+    oratoryNote: notes.delivery,
+    protocolNote: notes.protocol,
+  };
 }
 
 export function RubricCard({ review, text }: { review: PresentationReview; text?: string }) {
   const { t } = useTr();
-  const coach = useSpeechCoach(review, text);
-  const title = review.mode === "typed" ? "文字評分 · 優秀 5 到不足 1" : "口語評分 · 優秀 5 到不足 1";
-  const mark = coach?.mark ?? speechMark(review);
-  const improvements = coach?.improvements.length ? coach.improvements : review.suggestions;
+  const { coach, failed } = useSpeechCoach(review, text);
+  const shown = withCoach(review, coach);
+  const title = shown.mode === "typed" ? "文字評分 · 優秀 5 到不足 1" : "口語評分 · 優秀 5 到不足 1";
+  if (!coach?.axes || !coach.notes) {
+    return (
+      <section className="mt-4 rounded-sm border border-[#e4d8c4] bg-white/60 p-4" data-testid="rubric-card">
+        <p className="text-xs text-brass-deep">{t(title)}</p>
+        <p className="mt-2 text-sm leading-6 text-ink-soft">
+          {t(failed ? "評分員暫時無法給出分數。" : "評分員正在讀這一次發言。")}
+        </p>
+      </section>
+    );
+  }
+  const mark = coach.mark;
+  const improvements = coach.improvements;
 
   return (
     <section className="mt-4 rounded-sm border border-[#e4d8c4] bg-white/60 p-4" data-testid="rubric-card">
@@ -114,23 +145,21 @@ export function RubricCard({ review, text }: { review: PresentationReview; text?
       <p className="mt-2 font-serif text-5xl leading-none text-ink" data-testid="speech-mark">
         {mark}
       </p>
-      <p className="mt-1 text-sm text-ink-soft">
-        {t(coach?.source === "model" ? "這一分數由評分員給出。" : "這次發言滿分 100。七項各從 1 到 5，再合成這一分數。")}
-      </p>
+      <p className="mt-1 text-sm text-ink-soft">{t("這一分數由評分員給出。")}</p>
       <div className="mt-3 grid items-start gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-        <RadarChart review={review} />
+        <RadarChart review={shown} />
         <div className="grid gap-3 sm:grid-cols-2">
           {RUBRIC_AXES.map((row) => {
             const id = row.id as RubricAxisId;
-            const score = review.axes[id];
-            const label = review.mode === "typed" ? row.typedLabel : row.label;
+            const score = shown.axes[id];
+            const label = shown.mode === "typed" ? row.typedLabel : row.label;
             return (
               <div key={id} data-testid={`rubric-axis-${id}`}>
                 <p className="text-sm font-medium">{t(label)}</p>
                 <p className="mt-1 font-serif text-2xl">
                   {score} · {t(levelLabel(score))}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-ink-soft">{t(review.notes[id])}</p>
+                <p className="mt-1 text-sm leading-6 text-ink-soft">{shown.notes[id]}</p>
               </div>
             );
           })}
@@ -141,7 +170,7 @@ export function RubricCard({ review, text }: { review: PresentationReview; text?
           <p className="text-sm font-medium">{t("下次可以改的地方")}</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6">
             {improvements.map((item) => (
-              <li key={item}>{coach?.source === "model" ? item : t(item)}</li>
+              <li key={item}>{item}</li>
             ))}
           </ul>
         </div>

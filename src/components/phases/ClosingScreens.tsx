@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { findCase, sdgGoal } from "@/content/cases";
 import { REFLECTION_PROMPT } from "@/content/copy";
 import { DELEGATES } from "@/content/delegates";
 import { deriveDifficulty } from "@/engine/difficulty";
-import { amendmentLabel, gradeRound } from "@/engine/scoring";
+import { amendmentLabel, MUN_CRITERIA, type MunCriterion } from "@/engine/scoring";
 import { GradeMarks, GradeWeb } from "@/components/chamber/GradeWeb";
 import { Kicker, Paper, Seal } from "@/components/chamber/primitives";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,6 @@ import type { CountryId, GameState, SessionScore } from "@/types/game";
 const ROLL: CountryId[] = ["bangladesh", "brazil", "china", "germany", "kenya", "usa"];
 
 const BALLOT_LABEL = { yes: "贊成", no: "反對", abstain: "棄權" } as const;
-
-function average(values: number[]): string {
-  if (!values.length) return "0";
-  return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
-}
 
 export function VotingScreen() {
   const { state, dispatch, enterDebrief } = useGame();
@@ -87,6 +82,7 @@ export function DebriefScreen() {
   const { state, history, dispatch, restart } = useGame();
   const { t, lang } = useTr();
   const score = state.score;
+  const [coachFailed, setCoachFailed] = useState(false);
   const pack = useRef<{ state: GameState; score: SessionScore; lang: typeof lang } | null>(null);
   if (score) pack.current = { state, score, lang };
   useEffect(() => {
@@ -94,44 +90,50 @@ export function DebriefScreen() {
     if (!snap || snap.score.coachMark) return;
     let cancelled = false;
     void gradeSession(createLlmClient(llmEnvFromImportMeta(import.meta.env)), snap.state, snap.score, snap.lang).then((mark) => {
-      if (!cancelled) dispatch({ type: "APPLY_COACH", mark });
+      if (cancelled) return;
+      if (mark) dispatch({ type: "APPLY_COACH", mark });
+      else setCoachFailed(true);
     });
     return () => {
       cancelled = true;
     };
   }, [dispatch, state.sessionId]);
   if (!score) return null;
-  const fallback = gradeRound(state, score);
-  const criteria = score.coachMark ? criteriaFromCoach(score.coachMark, fallback) : fallback;
+  const blank: MunCriterion[] = MUN_CRITERIA.map((item) => ({ ...item, level: 1 }));
+  const criteria = score.coachMark ? criteriaFromCoach(score.coachMark, blank) : [];
   const improvements = score.coachMark?.improvements ?? [];
-  const meters = [
-    ["立場一致性", score.consistency, score.narrative.consistency],
-    ["發言與論證", score.argumentation, score.narrative.argumentation],
-    ["盟友爭取", score.alliance, score.narrative.alliance],
-    ["對結果的影響", score.influence, score.narrative.influence],
-  ] as const;
 
   return (
     <div className="space-y-4">
       <div>
         <Kicker>{t("閉幕")}</Kicker>
-        <h2 className="mt-1 font-serif text-4xl text-paper">{t(score.tierLabel)}</h2>
+        <h2 className="mt-1 font-serif text-4xl text-paper">
+          {t(score.coachMark ? score.tierLabel : coachFailed ? "評分員暫時無法給出分數。" : "評分員正在讀這一場。")}
+        </h2>
         <p className="mt-2 text-sm text-[#d9d0c2]">
-          {t(`綜合 ${score.overall} · 難度 ${state.difficulty.label} · 理解題 ${score.comprehensionCorrect}/${score.comprehensionTotal}`)}
+          {t(
+            score.coachMark
+              ? `綜合 ${score.coachMark.overall} · 難度 ${state.difficulty.label} · 理解題 ${score.comprehensionCorrect}/${score.comprehensionTotal}`
+              : `難度 ${state.difficulty.label} · 理解題 ${score.comprehensionCorrect}/${score.comprehensionTotal}`,
+          )}
         </p>
       </div>
       <Paper className="p-5">
         <p className="text-xs tracking-[0.14em] text-brass-deep">{t("本場評分")}</p>
         <div className="mt-2 flex flex-wrap items-end gap-4">
           <p className="font-serif text-6xl leading-none" data-testid="round-mark">
-            {score.overall}
+            {score.coachMark ? score.coachMark.overall : "…"}
           </p>
           <p className="pb-1 text-sm text-ink-soft">
-            {t(score.coachMark ? "這一分數由評分員給出。蛛網的七個角是它給的模擬聯合國標準，每一項從 1 到 5。" : "評分員正在讀這一場。")}
+            {t(score.coachMark ? "這一分數由評分員給出。蛛網的七個角是它給的模擬聯合國標準，每一項從 1 到 5。" : coachFailed ? "評分員暫時無法給出分數。" : "評分員正在讀這一場。")}
           </p>
         </div>
-        <GradeWeb criteria={criteria} />
-        <GradeMarks criteria={criteria} />
+        {score.coachMark ? (
+          <>
+            <GradeWeb criteria={criteria} />
+            <GradeMarks criteria={criteria} />
+          </>
+        ) : null}
         {improvements.length ? (
           <div className="mt-4 border-t border-[#e4d8c4] pt-3">
             <p className="text-sm font-medium">{t("需要改進")}</p>
@@ -143,39 +145,6 @@ export function DebriefScreen() {
           </div>
         ) : null}
       </Paper>
-      <div className="grid gap-3 md:grid-cols-2">
-        {meters.map(([label, value, text]) => (
-          <Paper key={label} className="p-4">
-            <div className="flex items-baseline justify-between">
-              <h3 className="font-serif text-xl">{t(label)}</h3>
-              <span className="font-serif text-2xl">{value}</span>
-            </div>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#e4d8c4]">
-              <div className="h-full bg-brass-deep" style={{ width: `${value}%` }} />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-ink-soft">{t(text)}</p>
-          </Paper>
-        ))}
-      </div>
-      {state.presentations?.length ? (
-        <Paper className="p-5">
-          <h3 className="font-serif text-xl">{t("口語與文字評分")}</h3>
-          <p className="mt-2 text-sm leading-7 text-ink-soft">
-            {t(
-              `共 ${state.presentations.length} 次發言。立場 ${average(state.presentations.map((item) => item.axes.position))} · 論證 ${average(state.presentations.map((item) => item.axes.reasoning))} · 證據 ${average(state.presentations.map((item) => item.axes.evidence))} · 方案 ${average(state.presentations.map((item) => item.axes.solution))} · 扣題 ${average(state.presentations.map((item) => item.axes.focus))} · 表達 ${average(state.presentations.map((item) => item.axes.delivery))} · 儀態 ${average(state.presentations.map((item) => item.axes.protocol))}。口語場次的眼神和站姿沒有計入。`,
-            )}
-          </p>
-          <ul className="mt-3 space-y-2 text-sm leading-6">
-            {state.presentations.map((item, index) => (
-              <li key={item.id}>
-                {t(
-                  `第 ${index + 1} 次${item.occasion === "opening" ? "開場" : "有秩序動議"}（${item.mode === "typed" ? "打字" : "口語"}）：立場 ${item.axes.position} · 論證 ${item.axes.reasoning} · 證據 ${item.axes.evidence} · 方案 ${item.axes.solution} · 扣題 ${item.axes.focus} · 表達 ${item.axes.delivery} · 儀態 ${item.axes.protocol}`,
-                )}
-              </li>
-            ))}
-          </ul>
-        </Paper>
-      ) : null}
       <Paper className="p-5">
         <h3 className="font-serif text-xl">{t("修正案")}</h3>
         <p className="mt-2 text-sm leading-6">
