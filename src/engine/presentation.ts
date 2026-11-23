@@ -157,6 +157,23 @@ export function measureDelivery(samples: number[], sampleMs: number, durationMs:
   };
 }
 
+/** RMS levels in fixed windows, so an uploaded file can use the same delivery score as the microphone. */
+export function samplesFromBuffer(buffer: AudioBuffer, sampleMs = 100): number[] {
+  const channel = buffer.getChannelData(0);
+  const frame = Math.max(1, Math.round((buffer.sampleRate * sampleMs) / 1000));
+  const samples: number[] = [];
+  for (let offset = 0; offset < channel.length; offset += frame) {
+    const end = Math.min(channel.length, offset + frame);
+    let sum = 0;
+    for (let index = offset; index < end; index += 1) {
+      const value = channel[index] ?? 0;
+      sum += value * value;
+    }
+    samples.push(Math.sqrt(sum / Math.max(1, end - offset)));
+  }
+  return samples;
+}
+
 function timeScore(durationMs: number, occasion: PresentationOccasion): RubricLevel {
   const window = SPEECH_WINDOW[occasion];
   if (durationMs >= window.minMs && durationMs <= window.maxMs) return 5;

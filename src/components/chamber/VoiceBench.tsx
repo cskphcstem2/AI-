@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Square } from "lucide-react";
+import { Mic, Square, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RubricCard } from "@/components/chamber/RubricCard";
 import { LanguageBar } from "@/i18n/LanguageBar";
 import { type OfficialLang } from "@/i18n/languages";
 import { useTr } from "@/i18n/useTr";
-import { detectSpokenLang, fallbackSpeechTag, nextCantoneseTag, prepareSpeechLanguages, speechTagFor, usesCloudRecognition } from "@/engine/speechLang";
+import { fallbackSpeechTag, nextCantoneseTag, prepareSpeechLanguages, speechTagFor, usesCloudRecognition } from "@/engine/speechLang";
 import {
   measureDelivery,
+  samplesFromBuffer,
   scorePresentation,
   SPEECH_WINDOW,
   type DeliverySample,
   type PresentationOccasion,
 } from "@/engine/presentation";
+import { llmEnvFromImportMeta } from "@/llm/client";
+import { isMp3File, sttLanguage, transcribeAudio } from "@/llm/transcribe";
 import { appendSpeech, readSession, undoubleTranscript, type SpeechPiece } from "@/engine/speechCapture";
 import type { TruthBullet } from "@/types/game";
 
@@ -71,7 +74,7 @@ export function VoiceBench({
   onDeliver: (text: string, delivery: DeliverySample) => void;
   disabled?: boolean;
 }) {
-  const { t, speechLanguage, chineseVoice, setSpeech } = useTr();
+  const { t, speechLanguage, chineseVoice } = useTr();
   const windowSpec = SPEECH_WINDOW[occasion];
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -80,6 +83,8 @@ export function VoiceBench({
   const [delivery, setDelivery] = useState<DeliverySample | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const samples = useRef<number[]>([]);
   const startedAt = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
@@ -102,23 +107,19 @@ export function VoiceBench({
   const audioUrlRef = useRef<string | null>(null);
   const listenRetries = useRef(0);
   const holdRestart = useRef(false);
-  const pinned = useRef(false);
-  const detecting = useRef(false);
+  const pinned = useRef(true);
   const voicedMs = useRef(0);
   const triedAltCantonese = useRef(false);
   voiceRef.current = chineseVoice;
 
   useEffect(() => {
     const tag = speechTagFor(speechLanguage, chineseVoice);
-    const fromDetector = detecting.current;
-    detecting.current = false;
     const changed = speechLangRef.current !== speechLanguage || langRef.current !== tag;
     speechLangRef.current = speechLanguage;
-    if (changed && !fromDetector) {
-      pinned.current = true;
-      langRef.current = tag;
-    }
-    if (!changed || !recordingRef.current) return;
+    if (!changed) return;
+    pinned.current = true;
+    langRef.current = tag;
+    if (!recordingRef.current) return;
     holdRestart.current = false;
     try {
       recognitionRef.current?.stop();
@@ -185,7 +186,7 @@ export function VoiceBench({
     recognition.lang = langRef.current;
     recognition.continuous = true;
     recognition.interimResults = true;
-    if (usesCloudRecognition(langRef.current)) recognition.processLocally = false;
+    recognition.processLocally = false;
     recognition.onresult = (event) => {
       const pieces: SpeechPiece[] = [];
       for (let index = 0; index < event.results.length; index += 1) {
@@ -197,19 +198,7 @@ export function VoiceBench({
       const session = readSession(pieces);
       sessionFinalRef.current = session.finalText;
       interimRef.current = session.interim;
-      const heardText = publishHeard();
-      const detected = detectSpokenLang(heardText);
-      if (!pinned.current && detected && detected !== speechLangRef.current) {
-        detecting.current = true;
-        speechLangRef.current = detected;
-        langRef.current = speechTagFor(detected, voiceRef.current);
-        setSpeech(detected);
-        try {
-          recognition.stop();
-        } catch {
-          /* already stopped */
-        }
-      }
+      publishHeard();
     };
     recognition.onerror = (event) => {
       if (event.error === "not-allowed") {
@@ -265,7 +254,7 @@ export function VoiceBench({
     if (deliverTimer.current) window.clearTimeout(deliverTimer.current);
     listenRetries.current = 0;
     holdRestart.current = false;
-    pinned.current = false;
+    pinned.current = true;
     voicedMs.current = 0;
     triedAltCantonese.current = false;
     langRef.current = speechTagFor(speechLangRef.current, voiceRef.current);
@@ -388,6 +377,58 @@ export function VoiceBench({
     setRecording(false);
   }
 
+  async function deliveryFromFile(file: File, fallbackSec: number): Promise<DeliverySample> {
+    try {
+      const context = new AudioContext();
+      try {
+        const decoded = await context.decodeAudioData((await file.arrayBuffer()).slice(0));
+        return measureDelivery(samplesFromBuffer(decoded), 100, Math.round(decoded.duration * 1000));
+      } finally {
+        await context.close();
+      }
+    } catch {
+      return measureDelivery([0.05], 100, Math.max(1000, Math.round(fallbackSec * 1000)));
+    }
+  }
+
+  async function uploadMp3(file: File) {
+    if (recordingRef.current || transcribing) return;
+    if (!isMp3File(file)) {
+      setError("請上傳 MP3 檔。");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setError("MP3 請小於 20MB。");
+      return;
+    }
+    setError(null);
+    setTranscribing(true);
+    setDelivery(null);
+    deliveredRef.current = false;
+    try {
+      const env = llmEnvFromImportMeta(import.meta.env);
+      const language = sttLanguage(speechLangRef.current, voiceRef.current);
+      const result = await transcribeAudio({ ...env, file, language });
+      const sample = await deliveryFromFile(file, result.durationSec);
+      const url = URL.createObjectURL(file);
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = url;
+      setAudioUrl(url);
+      setHeard(result.text);
+      finalRef.current = result.text;
+      bestRef.current = result.text;
+      committedRef.current = result.text;
+      setScoredLang(speechLangRef.current);
+      setDelivery(sample);
+      setElapsed(sample.durationMs);
+    } catch (caught) {
+      const reason = caught instanceof Error ? caught.message : "";
+      setError(reason === "missing-key" ? "沒有設定語音轉文字的金鑰。" : "音檔轉文字失敗。請確認網絡和 API 金鑰後再試。");
+    } finally {
+      setTranscribing(false);
+    }
+  }
+
   const seconds = Math.round(elapsed / 1000);
 
   return (
@@ -409,7 +450,7 @@ export function VoiceBench({
         {t(windowSpec.label)} {t("講完會按七項標準給分，並顯示雷達圖。")}
       </p>
       <p className="mt-3 text-xs leading-5 text-ink-soft">
-        {t("語音輸入可辨識阿拉伯文、國語、廣東話、英文、法文、俄文和西班牙文。國語和廣東話請按對應按鈕。聽出另一種語言時，會改用那種語言繼續聽，並用它評分。")}
+        {t("語音輸入可辨識阿拉伯文、國語、廣東話、英文、法文、俄文和西班牙文。國語和廣東話請按對應按鈕。辨識會鎖定你選的語言，不會中途改聽另一種語言。也可以上傳 MP3，由語音模型轉成文字。")}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <LanguageBar mode="speech" />
@@ -419,11 +460,32 @@ export function VoiceBench({
             {t(`停止並評分 · ${seconds} 秒`)}
           </Button>
         ) : (
-          <Button data-testid="speech-record" variant="ink" onClick={() => void start()} disabled={disabled}>
+          <Button data-testid="speech-record" variant="ink" onClick={() => void start()} disabled={disabled || transcribing}>
             <Mic className="size-3.5" aria-hidden="true" />
             {t("開始發言")}
           </Button>
         )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".mp3,audio/mpeg"
+          className="hidden"
+          data-testid="speech-file"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) void uploadMp3(file);
+          }}
+        />
+        <Button
+          data-testid="speech-upload"
+          variant="paper"
+          disabled={disabled || recording || transcribing}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="size-3.5" aria-hidden="true" />
+          {t(transcribing ? "正在把音檔轉成文字。" : "上傳 MP3 轉成文字")}
+        </Button>
       </div>
       {recording ? (
         <p data-testid="speech-live" className="mt-3 min-h-6 text-sm leading-6 text-[#d9d0c2]">
