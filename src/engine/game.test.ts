@@ -198,7 +198,7 @@ describe("diplomacy and voting", () => {
   });
 
   it("opens the amendment page from ask-for-cosponsors even when the blanks are still short", () => {
-    let state = { ...createInitialState(), phase: "drafting" as const };
+    let state: GameState = { ...createInitialState(), phase: "drafting" };
     state = reducer(state, {
       type: "SET_BLANK",
       blankId: "form",
