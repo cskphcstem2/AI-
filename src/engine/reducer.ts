@@ -60,6 +60,7 @@ export type Action =
   | { type: "INSERT_BULLET"; bulletId: string }
   | { type: "SUBMIT_SPEECH"; text?: string; delivery?: DeliverySample; actorSeat?: CountryId }
   | { type: "REVEAL_SPEAKER" }
+  | { type: "REVEAL_ALL_SPEAKERS" }
   | { type: "REVEAL_SECRETARIAT" }
   | { type: "TO_MODERATED" }
   | { type: "REVEAL_REMARK" }
@@ -412,6 +413,12 @@ export function reducer(state: GameState, action: Action): GameState {
       if (state.phase !== "opening" || state.openingStep !== "floor") return state;
       if (state.aiRevealed >= speechOrder(state.playerId, humanSeatsOf(state)).length) return state;
       return { ...state, aiRevealed: state.aiRevealed + 1, lastNotice: null };
+    }
+    case "REVEAL_ALL_SPEAKERS": {
+      if (state.phase !== "opening" || state.openingStep !== "floor") return state;
+      const total = speechOrder(state.playerId, humanSeatsOf(state)).length;
+      if (state.aiRevealed >= total) return state;
+      return { ...state, aiRevealed: total, lastNotice: null };
     }
     case "REVEAL_SECRETARIAT": {
       if (state.phase !== "opening" || state.openingStep !== "floor") return state;

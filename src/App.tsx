@@ -20,6 +20,9 @@ import { useGame } from "@/state/context";
 
 function Screen() {
   const { state } = useGame();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [state.phase]);
   if (state.phase === "lobby" && !state.caseId) return <CaseSelectScreen />;
   if (state.phase === "lobby") return <LobbyScreen />;
   return (

@@ -204,9 +204,14 @@ function Floor() {
         <SpeechCard key={id} speaker={id} text={DELEGATES[id].openingSpeech} />
       ))}
       {state.openingStep === "floor" && next ? (
-        <Button data-testid="reveal-speaker" variant="paper" onClick={() => dispatch({ type: "REVEAL_SPEAKER" })}>
-          {t(`請${DELEGATES[next].placard}代表發言`)}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button data-testid="reveal-speaker" variant="paper" onClick={() => dispatch({ type: "REVEAL_SPEAKER" })}>
+            {t(`請${DELEGATES[next].placard}代表發言`)}
+          </Button>
+          <Button data-testid="reveal-all" variant="line" onClick={() => dispatch({ type: "REVEAL_ALL_SPEAKERS" })}>
+            {t("一次顯示全部發言")}
+          </Button>
+        </div>
       ) : null}
       {state.openingStep === "floor" && !next ? (
         <Button data-testid="secretariat" variant="paper" onClick={() => dispatch({ type: "REVEAL_SECRETARIAT" })}>

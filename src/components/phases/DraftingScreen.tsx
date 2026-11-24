@@ -126,7 +126,8 @@ function BlankEditor({
   if (!blank) return null;
   const active = state.activeBlankId === blank.id;
   const attached = state.bullets.find((bullet) => bullet.id === bulletId);
-  const shown = value?.kind === "custom" ? clause : clause ? t(clause) : "";
+  const typed = custom.trim();
+  const shown = typed || (value?.kind === "custom" ? clause : clause ? t(clause) : "");
 
   return (
     <li
@@ -171,20 +172,6 @@ function BlankEditor({
         ))}
       </div>
       {attached ? <p className="mt-1 text-xs text-brass-deep">{t("已附論據")}</p> : null}
-      <Button
-        className="mt-2"
-        size="sm"
-        variant="quiet"
-        onClick={() =>
-          dispatch({
-            type: "SET_BLANK",
-            blankId: blank.id,
-            value: { kind: "custom", custom, bulletId },
-          })
-        }
-      >
-        {t("使用這句")}
-      </Button>
     </li>
   );
 }
