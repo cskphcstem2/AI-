@@ -12,6 +12,7 @@ import { SCENE_ROWS } from "@/i18n/phraseScene";
 import { SOURCE_ROWS } from "@/i18n/phraseSources";
 import { TALK_ROWS } from "@/i18n/phraseTalks";
 import { CASE_ROWS } from "@/i18n/phraseCases";
+import { GAP_ROWS } from "@/i18n/phraseGap";
 import { UI_ROWS } from "@/i18n/phraseUi";
 import { SEAT_ROWS } from "@/i18n/phraseSeats";
 import { TRIAL_ROWS } from "@/i18n/phraseTrial";
@@ -35,6 +36,7 @@ const GROUPS: PhraseRow[][] = [
   SOURCE_ROWS,
   ONLINE_ROWS,
   CASE_ROWS,
+  GAP_ROWS,
 ];
 
 export const PHRASES = phraseMap(GROUPS.flat());

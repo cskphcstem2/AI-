@@ -117,5 +117,5 @@ export function loc(lang: string, zh: string, en: string): string {
   if (code === "zh") return zh;
   const translated = tr(code, zh);
   if (translated !== zh) return translated;
-  return code === "en" ? en : translated;
+  return en;
 }

@@ -127,7 +127,7 @@ export function RoomLobbyScreen() {
               {t("離開房間")}
             </Button>
           </div>
-          {mp.error ? <p className="mt-3 text-sm text-[#f0c4a8]">{mp.error}</p> : null}
+          {mp.error ? <p className="mt-3 text-sm text-[#f0c4a8]">{t(mp.error)}</p> : null}
         </div>
 
         <Paper className="p-5">

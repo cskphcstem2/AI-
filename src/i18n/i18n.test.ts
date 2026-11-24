@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PROPOSALS } from "@/content/caucus";
+import { DIPLOMACY, PROPOSALS } from "@/content/caucus";
+import { closenessReply } from "@/content/solutions";
 import { AIDE_GREETING, CHAIR_OPENING, PHASE_LABEL, RULES, draftHint, moderatedHint, openingHint } from "@/content/copy";
 import { AI_DELEGATES, PLAYER } from "@/content/delegates";
 import { DOSSIER_TABS, SENTENCES } from "@/content/dossier";
@@ -81,6 +82,10 @@ describe("official languages", () => {
     walk(QUIZ, lines);
     walk(FOCUS_QUESTIONS, lines);
     walk(PROPOSALS, lines);
+    walk(DIPLOMACY, lines);
+    for (const id of ["bangladesh", "brazil", "germany", "china", "usa", "kenya"] as const) {
+      for (const band of ["close", "far", "redline"] as const) lines.push(closenessReply(id, band, false, "zh"));
+    }
     walk(DRAFT_BLANKS, lines);
     walk(AMENDMENTS, lines);
     walk(DRAFT_PREAMBLE, lines);

@@ -95,7 +95,7 @@ export function LobbyScreen() {
                 </Button>
               </div>
             </div>
-            {mp.error ? <p className="mt-3 text-sm text-[#f0c4a8]">{mp.error}</p> : null}
+            {mp.error ? <p className="mt-3 text-sm text-[#f0c4a8]">{t(mp.error)}</p> : null}
           </Paper>
 
           <div className="mt-6">

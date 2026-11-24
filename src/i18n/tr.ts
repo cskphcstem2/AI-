@@ -140,6 +140,53 @@ function pattern(lang: Exclude<OfficialLang, "zh">, source: string): string | nu
       `مندوب ${name} حاضر`,
     );
   }
+  const heldBy = /^已由 (.+) 代表$/.exec(source);
+  if (heldBy) {
+    const name = heldBy[1] ?? "";
+    return pack(
+      lang,
+      `Taken by ${name}`,
+      `Pris par ${name}`,
+      `Ocupado por ${name}`,
+      `Занято: ${name}`,
+      `يشغله ${name}`,
+    );
+  }
+  const humans = /^真人 (\d+)\/(\d+)$/.exec(source);
+  if (humans) {
+    return pack(
+      lang,
+      `Humans ${humans[1]}/${humans[2]}`,
+      `Humains ${humans[1]}/${humans[2]}`,
+      `Humanos ${humans[1]}/${humans[2]}`,
+      `Люди ${humans[1]}/${humans[2]}`,
+      `بشر ${humans[1]}/${humans[2]}`,
+    );
+  }
+  const roomCap = /^最多 (\d+) 位真人代表不同國家發言，其餘席位由輔助智能補充。選定席位後按「準備就緒」，房主開議。$/.exec(source);
+  if (roomCap) {
+    const n = roomCap[1] ?? "";
+    return pack(
+      lang,
+      `Up to ${n} people speak for different countries. The remaining seats are filled by the aide. After you choose a seat, press Ready. The host opens the meeting.`,
+      `Jusqu'à ${n} personnes parlent pour des pays différents. Les sièges restants sont tenus par l'assistant. Après avoir choisi un siège, appuyez sur Prêt. L'hôte ouvre la réunion.`,
+      `Hasta ${n} personas hablan por países distintos. Los asientos restantes los cubre el asistente. Tras elegir asiento, pulse Listo. El anfitrión abre la reunión.`,
+      `До ${n} человек говорят от разных стран. Остальные места занимает помощник. Выбрав место, нажмите «Готов». Хозяин открывает заседание.`,
+      `حتى ${n} أشخاص يتحدثون عن دول مختلفة. وبقية المقاعد يملؤها المساعد. بعد اختيار المقعد اضغط «جاهز». ويفتتح صاحب الغرفة الاجتماع.`,
+    );
+  }
+  const lobbyCap = /^最多 (\d+) 人同一場，各自代表一國發言；沒人選的席位由 AI 補充。需已用 Google 登入。$/.exec(source);
+  if (lobbyCap) {
+    const n = lobbyCap[1] ?? "";
+    return pack(
+      lang,
+      `Up to ${n} people in one session, each speaking for one country. Seats nobody chose are filled by the aide. You need to be signed in with Google.`,
+      `Jusqu'à ${n} personnes dans une même session, chacune pour un pays. Les sièges sans personne sont tenus par l'assistant. Il faut être connecté avec Google.`,
+      `Hasta ${n} personas en una misma sesión, cada una por un país. Los asientos sin persona los cubre el asistente. Hay que haber entrado con Google.`,
+      `До ${n} человек в одной сессии, каждый от одной страны. Места, которые никто не выбрал, занимает помощник. Нужен вход через Google.`,
+      `حتى ${n} أشخاص في جلسة واحدة، كل واحد عن دولة. والمقاعد التي لم يخترها أحد يملؤها المساعد. ويلزم تسجيل الدخول بحساب Google.`,
+    );
+  }
   const byYou = /^由你代表(.+)發言$/.exec(source);
   if (byYou) {
     const name = tr(lang, byYou[1] ?? "");
